@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="static/preview.png" alt="SubTKO Logo" width="1200" height="auto">
+  <img src="static/img/preview.png" alt="SubTKO Logo" width="1200" height="auto">
   
   # SubdomainTKO
   **Client-Side Subdomain Takeover Scanner**
@@ -24,3 +24,4 @@ SubdomainTKO is a **100% client-side** security tool for identifying vulnerable 
 ⚠️ **Warning:** This tool is strictly for authorized security auditing. It must only be used on infrastructure you own, are explicitly authorized to test, or within the scope of an official Bug Bounty program. 
 
 Claiming vulnerable third-party services on a domain you do not own is illegal. The author is not responsible for any misuse.
+
