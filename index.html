@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubTKO | Subdomain Takeover Scanner</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="static/img/logo.png">
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Main Application Container -->
+    <div class="app-container">
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <h1>Subdomain.</h1>
+                <img src="static/img/logo.png" alt="SubTKO Logo" class="app-logo">
+            </div>
+
+            <div class="header-center-title">
+                <h2>Subdomain Takeover Scanner</h2>
+                <p>Identify vulnerable targets & dangling DNS records</p>
+            </div>
+
+            <div class="terminal-badge">
+                <div class="terminal-text">
+                    <div class="term-line status">All checks performed Client-Side.</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Legal Disclaimer Banner -->
+        <div class="disclaimer-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+                <strong>Legal Warning:</strong> This tool is strictly for authorized security auditing (e.g., Bug Bounty
+                programs, infrastructure you own). Claiming vulnerable third-party services on a domain you do not own
+                is illegal.
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+
+            <!-- Left Panel: Input area -->
+            <section class="panel input-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-list"></i> Target Subdomains</h2>
+                    <span class="badge" id="domain-count">0</span>
+                </div>
+
+                <textarea id="subdomain-input"
+                    placeholder="Paste subdomains here (one per line)...&#10;Example:&#10;blog.example.com&#10;dev.example.com&#10;shop.example.com"></textarea>
+
+                <div class="controls">
+                    <button id="btn-start" class="btn primary"><i class="fa-solid fa-play"></i> Start Scan</button>
+                    <button id="btn-stop" class="btn hidden"><i class="fa-solid fa-stop"></i> Stop</button>
+                    <button id="btn-clear" class="btn secondary"><i class="fa-solid fa-trash"></i> Clear</button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Results area -->
+            <section class="panel results-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-radar"></i> Scan Results</h2>
+                    <div class="stats">
+                        <span class="stat safe" title="Safe"><i class="fa-solid fa-check-circle"></i> <span
+                                id="stat-safe">0</span></span>
+                        <span class="stat vulnerable" title="Vulnerable"><i class="fa-solid fa-skull"></i> <span
+                                id="stat-vuln">0</span></span>
+                        <span class="stat error" title="Error"><i class="fa-solid fa-circle-exclamation"></i> <span
+                                id="stat-err">0</span></span>
+                    </div>
+                </div>
+
+                <div class="results-container">
+                    <table id="results-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Subdomain</th>
+                                <th>CNAME / A Record</th>
+                                <th>Provider Match</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                            <!-- Results will be injected here via JS -->
+                            <tr class="empty-state">
+                                <td colspan="5">Ready to scan. Paste subdomains on the left.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal for Remediation Info -->
+        <div id="remediation-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2 id="modal-title">Takeover Vectors</h2>
+                <div id="modal-body">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="static/js/signatures.js"></script>
+    <script src="static/js/scanner.js"></script>
+    <script src="static/js/ui.js"></script>
+</body>
+
+</html>
