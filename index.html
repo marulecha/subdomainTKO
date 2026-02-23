@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SubTKO | Subdomain Takeover Scanner</title>
+    <!-- Content Security Policy to allow DoH API requests -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src 'self' https://cloudflare-dns.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:;">
+    <title>SubdomainTKO | Subdomain Takeover Scanner</title>
     <link rel="stylesheet" href="static/css/style.css">
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="static/img/logo.png">
