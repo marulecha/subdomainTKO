@@ -6,121 +6,263 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Content Security Policy to allow DoH API requests -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; connect-src 'self' https://cloudflare-dns.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:;">
+        content="default-src 'self'; connect-src 'self' https://cloudflare-dns.com https://dns.google; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:;">
     <title>SubdomainTKO | Subdomain Takeover Scanner</title>
+    <meta name="description" content="Client-side subdomain takeover scanner. Checks CNAME records against known provider signatures using DNS-over-HTTPS.">
+    <meta name="theme-color" content="#08080a">
     <link rel="stylesheet" href="static/css/style.css">
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="static/img/logo.png">
-    <!-- Google Fonts for modern typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
+    <a class="skip-link" href="#subdomain-input">Skip to target input</a>
+    <div class="backdrop" aria-hidden="true"></div>
 
-    <!-- Main Application Container -->
     <div class="app-container">
 
-        <!-- Header -->
         <header class="app-header">
-            <div class="logo">
-                <h1>Subdomain.</h1>
-                <img src="static/img/logo.png" alt="SubTKO Logo" class="app-logo">
+            <div class="brand">
+                <img src="static/img/logo.png" alt="" class="brand-logo" width="44" height="44">
+                <div>
+                    <h1>Subdomain<span>TKO</span></h1>
+                    <p>Subdomain takeover scanner</p>
+                </div>
             </div>
 
-            <div class="header-center-title">
-                <h2>Subdomain Takeover Scanner</h2>
-                <p>Identify vulnerable targets & dangling DNS records</p>
-            </div>
-
-            <div class="terminal-badge">
-                <div class="terminal-text">
-                    <div class="term-line status">All checks performed Client-Side.</div>
+            <div class="header-meta">
+                <div class="scan-state" id="scan-state" aria-live="polite">
+                    <span class="dot"></span><span id="scan-state-text">Ready</span>
+                </div>
+                <div class="privacy-pill" title="DNS queries go straight from your browser to the resolver you pick. Nothing is sent to this site.">
+                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                    <span>100% client-side</span>
                 </div>
             </div>
         </header>
 
-        <!-- Legal Disclaimer Banner -->
-        <div class="disclaimer-banner">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <div>
-                <strong>Legal Warning:</strong> This tool is strictly for authorized security auditing (e.g., Bug Bounty
-                programs, infrastructure you own). Claiming vulnerable third-party services on a domain you do not own
-                is illegal.
-            </div>
+        <div class="disclaimer-banner" id="disclaimer" role="note">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <p><strong>Authorized testing only.</strong> Scan infrastructure you own or that a bug bounty program puts in
+                scope. Claiming a third-party service on a domain you do not own is illegal.</p>
+            <button type="button" class="icon-btn" id="btn-dismiss-disclaimer" aria-label="Dismiss warning">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
         </div>
 
-        <!-- Main Workspace -->
         <main class="workspace">
 
-            <!-- Left Panel: Input area -->
-            <section class="panel input-panel">
+            <!-- Targets -->
+            <section class="panel input-panel" aria-labelledby="targets-title">
                 <div class="panel-header">
-                    <h2><i class="fa-solid fa-list"></i> Target Subdomains</h2>
-                    <span class="badge" id="domain-count">0</span>
-                </div>
-
-                <textarea id="subdomain-input"
-                    placeholder="Paste subdomains here (one per line)...&#10;Example:&#10;blog.example.com&#10;dev.example.com&#10;shop.example.com"></textarea>
-
-                <div class="controls">
-                    <button id="btn-start" class="btn primary"><i class="fa-solid fa-play"></i> Start Scan</button>
-                    <button id="btn-stop" class="btn hidden"><i class="fa-solid fa-stop"></i> Stop</button>
-                    <button id="btn-clear" class="btn secondary"><i class="fa-solid fa-trash"></i> Clear</button>
-                </div>
-            </section>
-
-            <!-- Right Panel: Results area -->
-            <section class="panel results-panel">
-                <div class="panel-header">
-                    <h2><i class="fa-solid fa-radar"></i> Scan Results</h2>
-                    <div class="stats">
-                        <span class="stat safe" title="Safe"><i class="fa-solid fa-check-circle"></i> <span
-                                id="stat-safe">0</span></span>
-                        <span class="stat vulnerable" title="Vulnerable"><i class="fa-solid fa-skull"></i> <span
-                                id="stat-vuln">0</span></span>
-                        <span class="stat error" title="Error"><i class="fa-solid fa-circle-exclamation"></i> <span
-                                id="stat-err">0</span></span>
+                    <h2 id="targets-title">Targets</h2>
+                    <div class="panel-actions">
+                        <label class="icon-btn" for="file-input" title="Import a .txt file">
+                            <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                            <span class="sr-only">Import file</span>
+                        </label>
+                        <input type="file" id="file-input" accept=".txt,.csv,.lst,text/plain" class="sr-only">
+                        <button type="button" class="icon-btn" id="btn-clear" title="Clear targets and results">
+                            <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+                            <span class="sr-only">Clear</span>
+                        </button>
                     </div>
                 </div>
 
-                <div class="results-container">
-                    <table id="results-table">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Subdomain</th>
-                                <th>CNAME / A Record</th>
-                                <th>Provider Match</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="results-body">
-                            <!-- Results will be injected here via JS -->
-                            <tr class="empty-state">
-                                <td colspan="5">Ready to scan. Paste subdomains on the left.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="editor" id="dropzone">
+                    <div class="gutter" id="gutter" aria-hidden="true"></div>
+                    <label for="subdomain-input" class="sr-only">Subdomains to scan, one per line</label>
+                    <textarea id="subdomain-input" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off"
+                        placeholder="blog.example.com&#10;https://shop.example.com/cart&#10;*.dev.example.com&#10;# comments are ignored"></textarea>
+                    <div class="dropzone-overlay" aria-hidden="true">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                        <span>Drop to import</span>
+                    </div>
+                </div>
+
+                <div class="editor-status" id="parse-summary"></div>
+
+                <details class="settings" id="settings">
+                    <summary>
+                        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                        <span>Settings</span>
+                        <span class="settings-preview" id="settings-preview"></span>
+                    </summary>
+                    <div class="settings-body">
+                        <div class="field">
+                            <span class="field-label">DNS resolver</span>
+                            <div class="segmented" role="radiogroup" aria-label="DNS resolver" id="opt-resolver">
+                                <label><input type="radio" name="resolver" value="cloudflare" checked><span>Cloudflare</span></label>
+                                <label><input type="radio" name="resolver" value="google"><span>Google</span></label>
+                            </div>
+                        </div>
+                        <label class="field">
+                            <span class="field-label">Parallel queries <output id="opt-concurrency-value">5</output></span>
+                            <input type="range" id="opt-concurrency" min="1" max="20" value="5">
+                        </label>
+                    </div>
+                </details>
+
+                <button type="button" id="btn-start" class="btn primary" disabled>
+                    <i class="fa-solid fa-play" aria-hidden="true"></i>
+                    <span>Start scan</span>
+                    <kbd id="shortcut-hint">Ctrl ↵</kbd>
+                </button>
+                <button type="button" id="btn-stop" class="btn stop hidden">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span>Stop scan</span>
+                </button>
+            </section>
+
+            <!-- Results -->
+            <section class="panel results-panel" aria-labelledby="results-title">
+                <h2 id="results-title" class="sr-only">Results</h2>
+
+                <!-- Before the first scan -->
+                <div class="intro" id="intro">
+                    <div class="radar" aria-hidden="true">
+                        <svg viewBox="0 0 200 200">
+                            <defs>
+                                <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0" stop-color="#ff2d55" stop-opacity="0" />
+                                    <stop offset="1" stop-color="#ff2d55" stop-opacity="0.55" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="100" cy="100" r="92" class="ring" />
+                            <circle cx="100" cy="100" r="62" class="ring" />
+                            <circle cx="100" cy="100" r="32" class="ring" />
+                            <line x1="8" y1="100" x2="192" y2="100" class="ring" />
+                            <line x1="100" y1="8" x2="100" y2="192" class="ring" />
+                            <g class="sweep"><path d="M100 100 L100 8 A92 92 0 0 1 179.7 54 Z" fill="url(#sweep)" /></g>
+                            <circle cx="142" cy="66" r="4" class="blip b1" />
+                            <circle cx="64" cy="132" r="3" class="blip b2" />
+                            <circle cx="128" cy="150" r="3" class="blip b3" />
+                        </svg>
+                    </div>
+                    <h3>Find dangling DNS before someone else does</h3>
+                    <p>Paste the subdomains you want to check. Each one gets a single DNS-over-HTTPS query, and its CNAME
+                        chain is compared against known takeover fingerprints.</p>
+
+                    <ol class="steps">
+                        <li><span>1</span><div><strong>Resolve</strong>Follow the CNAME chain and read the response code.</div></li>
+                        <li><span>2</span><div><strong>Match</strong>Compare every hop with <b id="sig-count"></b> provider signatures.</div></li>
+                        <li><span>3</span><div><strong>Verify</strong>Open the host and confirm the unclaimed-resource page.</div></li>
+                    </ol>
+
+                    <button type="button" class="btn ghost" id="btn-example">
+                        <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Try with example targets
+                    </button>
+
+                    <div class="providers">
+                        <span class="providers-label">Providers covered</span>
+                        <div class="provider-cloud" id="provider-cloud"></div>
+                    </div>
+                </div>
+
+                <!-- During and after a scan -->
+                <div class="results-view hidden" id="results-view">
+                    <div class="summary" id="filters" role="group" aria-label="Filter results by status">
+                        <button type="button" class="stat-card vulnerable" data-filter="vulnerable" aria-pressed="false">
+                            <span class="stat-label"><i class="fa-solid fa-skull" aria-hidden="true"></i> Vulnerable</span>
+                            <span class="stat-value" data-count="vulnerable">0</span>
+                        </button>
+                        <button type="button" class="stat-card review" data-filter="review" aria-pressed="false">
+                            <span class="stat-label"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Review</span>
+                            <span class="stat-value" data-count="review">0</span>
+                        </button>
+                        <button type="button" class="stat-card safe" data-filter="safe" aria-pressed="false">
+                            <span class="stat-label"><i class="fa-solid fa-check" aria-hidden="true"></i> Safe</span>
+                            <span class="stat-value" data-count="safe">0</span>
+                        </button>
+                        <button type="button" class="stat-card none" data-filter="none" aria-pressed="false">
+                            <span class="stat-label"><i class="fa-solid fa-ban" aria-hidden="true"></i> No record</span>
+                            <span class="stat-value" data-count="none">0</span>
+                        </button>
+                        <button type="button" class="stat-card error" data-filter="error" aria-pressed="false">
+                            <span class="stat-label"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Error</span>
+                            <span class="stat-value" data-count="error">0</span>
+                        </button>
+                    </div>
+
+                    <div class="distribution">
+                        <div class="dist-bar" id="progress-bar" role="progressbar" aria-labelledby="progress-label"
+                            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <span class="seg vulnerable" data-seg="vulnerable"></span>
+                            <span class="seg review" data-seg="review"></span>
+                            <span class="seg error" data-seg="error"></span>
+                            <span class="seg safe" data-seg="safe"></span>
+                            <span class="seg none" data-seg="none"></span>
+                        </div>
+                        <div class="dist-meta">
+                            <span id="progress-label">0 of 0 scanned</span>
+                            <span id="progress-eta"></span>
+                        </div>
+                    </div>
+
+                    <div class="results-toolbar">
+                        <div class="search">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <label for="search-input" class="sr-only">Search results</label>
+                            <input type="search" id="search-input" placeholder="Search host, CNAME or provider">
+                            <kbd>/</kbd>
+                        </div>
+                        <div class="active-filter hidden" id="active-filter"></div>
+                        <div class="export-group">
+                            <button type="button" class="btn ghost small" id="btn-copy" disabled title="Copy vulnerable and review hosts">
+                                <i class="fa-regular fa-copy" aria-hidden="true"></i> <span>Copy findings</span>
+                            </button>
+                            <button type="button" class="btn ghost small" id="btn-export-csv" disabled title="Download CSV">
+                                <i class="fa-solid fa-download" aria-hidden="true"></i> <span>CSV</span>
+                            </button>
+                            <button type="button" class="btn ghost small" id="btn-export-json" disabled title="Download JSON">
+                                <i class="fa-solid fa-download" aria-hidden="true"></i> <span>JSON</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="results-container">
+                        <table id="results-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" aria-sort="ascending"><button type="button" class="sort-btn" data-sort="status">Status <i class="fa-solid fa-sort-up" aria-hidden="true"></i></button></th>
+                                    <th scope="col" aria-sort="none"><button type="button" class="sort-btn" data-sort="domain">Subdomain <i class="fa-solid fa-sort" aria-hidden="true"></i></button></th>
+                                    <th scope="col">Resolves to</th>
+                                    <th scope="col">Provider</th>
+                                    <th scope="col"><span class="sr-only">Details</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-body"></tbody>
+                        </table>
+                        <div class="empty-state hidden" id="empty-state"></div>
+                    </div>
                 </div>
             </section>
         </main>
 
-        <!-- Modal for Remediation Info -->
-        <div id="remediation-modal" class="modal hidden">
-            <div class="modal-content">
-                <span class="close-btn">&times;</span>
-                <h2 id="modal-title">Takeover Vectors</h2>
-                <div id="modal-body">
-                    <!-- Dynamic content -->
-                </div>
-            </div>
-        </div>
-
+        <footer class="app-footer">
+            <span>Signatures based on <a href="https://github.com/EdOverflow/can-i-take-over-xyz" target="_blank" rel="noopener noreferrer">can-i-take-over-xyz</a>. Results are leads. Confirm each one by hand before you report it.</span>
+            <span class="shortcuts"><kbd>/</kbd> search <kbd>J</kbd><kbd>K</kbd> next and previous <kbd>Esc</kbd> close</span>
+        </footer>
     </div>
 
-    <!-- Scripts -->
+    <!-- Details drawer -->
+    <dialog id="details-dialog" class="drawer" aria-labelledby="dialog-title">
+        <div class="drawer-nav">
+            <button type="button" class="icon-btn" id="btn-prev" aria-label="Previous result" title="Previous (K)"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button>
+            <button type="button" class="icon-btn" id="btn-next" aria-label="Next result" title="Next (J)"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+            <span class="drawer-pos" id="drawer-pos"></span>
+            <form method="dialog">
+                <button class="icon-btn" aria-label="Close" title="Close (Esc)"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </form>
+        </div>
+        <div class="drawer-body" id="dialog-content"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
     <script src="static/js/signatures.js"></script>
     <script src="static/js/scanner.js"></script>
     <script src="static/js/ui.js"></script>
